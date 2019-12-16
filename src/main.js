@@ -3,20 +3,25 @@
 import Vue from 'vue';
 import App from './App';
 import router from './router';
-import Pure from 'purejs-node';
+import store from './store';
 import config from '../config';
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
 
-if (config.env === 'development') {
-  console.log(Pure);
-  window.$pure = Pure;
-}
+Vue.use(ElementUI);
 
-Vue.config.productionTip = false
+Vue.config.productionTip = false;
 
 /* eslint-disable no-new */
-new Vue({
+(function(vue) {
+  if (config.env === 'development') {
+    window.$store = store;
+    window.$vue = vue;
+  }
+})(new Vue({
   el: '#app',
   router,
+  store,
   components: { App },
   template: '<App/>'
-})
+}));

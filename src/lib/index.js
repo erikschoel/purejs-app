@@ -19,7 +19,7 @@ function allItemsMapper($store, $pure) {
 }
 function allItemsMap(mapper) {
   return function(state, getters, rootGetters) {
-    const result = mapper(rootGetters.allItems);
+    const result = mapper(rootGetters.allItemsNamespaced);
     console.log(result);
     return result;
   }

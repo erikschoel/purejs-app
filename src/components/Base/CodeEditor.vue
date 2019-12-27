@@ -16,15 +16,17 @@ export default {
     },
     dataSource: {
       type: [ String, Function ],
-      required: true
+      default: null
     }
   },
   data() {
-    return {};
+    return {
+      value: ''
+    };
   },
   computed: {
     currentValue() {
-      return typeof this.dataSource === 'string' ? this.$store.getters[this.dataSource] : (this.dataSource instanceof Function ? this.data() : this.dataSource);
+      return typeof this.dataSource === 'string' ? this.$store.getters[this.dataSource] : (this.dataSource instanceof Function ? this.dataSource() : this.dataSource);
     }
   },
   methods: {
@@ -34,9 +36,7 @@ export default {
       }
     },
     setValue(value) {
-      if (this.editor) {
-        return this.editor.setValue(value || '');
-      }
+      this.value = value;
     },
     parseValue() {
       return this.getValue();
@@ -48,15 +48,23 @@ export default {
       cursorHeight: 0.9,
       mode: 'javascript'
     });
+    this.setValue(this.value);
   },
   beforeDestroy() {
     if (this.editor) {
+      this.value = '';
       this.editor.toTextArea();
+      this.editor = null;
     }
   },
   watch: {
     currentValue(value) {
-      this.setValue(value);
+      this.value = value;
+    },
+    value(value) {
+      if (this.editor) {
+        return this.editor.setValue(value || '');
+      }
     }
   }
 };

@@ -1,16 +1,33 @@
 <template>
-  <div id="app">
+  <div id="app" :class="status">
     <router-view/>
+    <loading-overlay :is-loading="isBusy" />
   </div>
 </template>
 
 <script>
+import LoadingOverlay from '@/components/Base/LoadingOverlay';
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    LoadingOverlay
+  },
+  computed: {
+    status() {
+      return this.$store.getters['status'].type || 'idle';
+    },
+    isBusy() {
+      return this.status !== 'idle';
+    },
+    hasError() {
+      return !!this.$store.getters['error'];
+    }
+  }
 }
 </script>
 
-<style>
+<style lang="scss">
 @import '../node_modules/codemirror/lib/codemirror.css';
 
 html, body {
@@ -31,5 +48,28 @@ html, body {
   text-align: left;
   color: #2c3e50;
   height: 100%;
+
+  > div {
+    display: flex;
+  }
+
+  .vld-icon {
+    svg {
+      display: none;
+    }
+  }
+
+  &.complete .vld-icon {
+    background-image: url(./assets/green-check.png);
+    height: 150px;
+    width: 150px;
+    background-repeat: no-repeat;
+    background-size: contain;
+  }
+  &.busy .vld-icon {
+    svg {
+      display: block;
+    }
+  }
 }
 </style>

@@ -8,13 +8,13 @@
         <el-input v-model="form.name"></el-input>
       </el-form-item>
       <el-form-item label="Constructor">
-        <code-editor ref="codeEditCtor" />
+        <code-editor ref="codeEditCtor" :name="'codeEditCtor'" />
       </el-form-item>
       <el-form-item label="Prototype extend">
-        <code-editor ref="codeEditProto" />
+        <code-editor ref="codeEditProto" :name="'codeEditProto'" />
       </el-form-item>
       <el-form-item label="Instantiation">
-        <code-editor ref="codeEditInst" />
+        <code-editor ref="codeEditInst" :name="'codeEditInst'" />
       </el-form-item>
     </el-form>
   </div>
@@ -23,6 +23,7 @@
 <script>
 import FormSelect from 'components/Forms/Select';
 import CodeEditor from 'components/Base/CodeEditor';
+import { mapGetters } from 'vuex';
 export default {
   components: {
     FormSelect, CodeEditor
@@ -40,27 +41,24 @@ export default {
     }
   },
   computed: {
+    ...mapGetters([
+      'currentItemRef'
+    ]),
+    ...mapGetters('items', [
+      'currentItemTitle',
+      'currentNamespace',
+      'current',
+      'currentItem',
+      'currentItemName',
+      'currentItemObject',
+      'hasCurrentItem'
+    ]),
     klassNames() {
       return Object.keys(this.$pure.classes);
     },
-    currentItemRef() {
-      return this.$store.getters['currentItemRef'];
-    },
-    currentNamespace() {
-      return this.currentItemRef.length ? this.currentItemRef[0] : '-';
-    },
-    current() {
-      return this.currentItemRef[0] === 'classes' || this.currentItemRef[0] === 'utils' ? this.$pure.$get(this.currentItemRef.slice(0, -1).join('.')) : this.$store.getters['allItems'][this.currentItemRef[0]];
-    },
-    currentItem() {
-      return this.currentItemRef.length ? this.current[this.currentItemName] : '';
-    },
-    currentItemName() {
-      return this.currentItemRef.length > 1 ? this.currentItemRef.slice(-1).pop() : '';
-    },
     editorValues() {
       const func = this.refsMounted && this.currentNamespace === 'extended' && this.currentItemRef.length > 1 ? this.currentItem : '';
-      return func && func instanceof Function ? func() : {};
+      return func ? func.of({ [this.current.key]: this.current.value }).compileOne(this.current.key) : '';
     }
   },
   methods: {
@@ -80,11 +78,6 @@ export default {
         ' return ' + JSON.stringify(form) + ';',
         '}'
       ].join('\n');
-    },
-    parseValue() {
-      // eslint-disable-next-line
-      var func = (new Function([ '\treturn {' ].concat(test.proto.split('\n').map((line, index, all) => line === '}' && index < (all.length - 1) ? '},' : line).map(line => '\t\t' + line).concat([ '\t}' ])).join('\n')));
-      return func && func instanceof Function ? func() : {};
     }
   },
   mounted() {

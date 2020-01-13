@@ -1,6 +1,9 @@
 <template>
   <el-container class="code-browser">
-    <el-header>{{ currentItemTitle }}</el-header>
+    <el-header>
+      <span class="current-item-title">{{ currentItemTitle }}</span>
+      <span class="current-function">{{ currentFunction }}</span>
+    </el-header>
     <el-container class="content-container" style="border: 1px solid #eee">
       <el-aside ref="sideBar" :data-source="'allItemsNamespaced'" />
       <el-container>
@@ -16,7 +19,7 @@
           <span>Tom</span>
         </el-header>
         <el-main>
-          <div class="empty-main" v-if="currentItemRef.length < 2"></div>
+          <div class="empty-main" v-if="currentItemRef.length === 0"></div>
           <extend-builder v-else-if="currentNamespace === 'extended'" ref="extendBuilder" />
           <instance-builder v-else-if="currentNamespace === 'instances'" ref="instanceBuilder" />
           <code-editor ref="codeEditor" :data-source="'currentItem'" v-else />
@@ -50,7 +53,10 @@ export default {
   },
   data() {
     return {
-      refsMounted: false
+      currentFunction: 'Code Browser',
+      refsMounted: false,
+      extended: 'extendBuilder',
+      instances: 'instanceBuilder'
     };
   },
   computed: {
@@ -60,6 +66,7 @@ export default {
       'allItemsNamespaced'
     ]),
     ...mapGetters('items', [
+      'isInternal',
       'currentItemTitle',
       'currentNamespace',
       'current',
@@ -72,10 +79,10 @@ export default {
       'currentItems'
     ]),
     canEdit() {
-      return this.hasCurrentItem && (this.currentItemRef[0] !== 'classes' && this.currentItemRef[0] !== 'utils');
+      return this.hasCurrentItem && !this.isInternal;
     },
     currentItemParser() {
-      return this.currentNamespace === 'extended' ? this.$refs.extendBuilder : this.$refs.codeEditor;
+      return this[this.currentNamespace] ? this.$refs[this[this.currentNamespace]] : this.$refs.codeEditor;
     },
     editorValue() {
       return this.refsMounted && this.currentItemRef.length > 1 && this.currentValue;
@@ -84,7 +91,7 @@ export default {
   methods: {
     clearItem() {
       if (this.$refs.sideBar) {
-        this.$refs.sideBar.deselectItem();
+        this.$refs.sideBar.deselectMenu();
       }
     },
     parseItem(value) {
@@ -95,13 +102,12 @@ export default {
       }
     },
     runItem() {
-      if (this.hasCurrentItem) {
-        const ns = this.currentItem.of(this.currentItems).compile();
+      if (this.isInternal) {
+        // SKIP
+      } else if (this.hasCurrentItem && this.currentItemName) {
+        const ns = this.$store.makeNamespace(this.currentNamespace).compile();
         if (ns) {
-          const item = ns.runItem(this.currentItemName);
-          if (item && item.run instanceof Function) {
-            item.run();
-          }
+          ns.runItem(this.currentItemName);
         }
       } else {
         const func = this.parseItem(this.currentItemParser.getValue());
@@ -156,7 +162,7 @@ export default {
       const data = Object.keys(this.allItemsNamespaced).reduce((result, namespace) => {
         result[namespace] = (this.allItemsNamespaced[namespace] || []).reduce((acc, id) => {
           const item = this.allItems[id];
-          acc[item.key] = item.value;
+          acc[item.key] = item;
           return acc;
         }, {});
         return result;
@@ -206,40 +212,6 @@ export default {
     line-height: 60px;
     font-size: 24px;
     font-weight: bold;
-  }
-
-  .el-aside {
-    width: 200px;
-    color: #333;
-    border-right: solid 1px #e6e6e6;
-    overflow-y: auto;
-    height: 100%;
-
-    .el-menu {
-      border-right: none;
-    }
-
-    .el-submenu {
-      .el-menu-item {
-        height: 36px;
-        line-height: 36px;
-        font-size: 16px;
-      }
-      .el-submenu__title {
-        font-size: 18px;
-        font-weight: bold;
-      }
-      &.selected {
-        background-color: #DDD;
-
-        .el-submenu__title:hover {
-          background-color: #BBB;
-        }
-      }
-    }
-    .el-menu-item-group__title {
-      display: none;
-    }
   }
 
   .el-main {

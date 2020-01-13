@@ -38,9 +38,9 @@ module.exports = {
       '@': resolve('src'),
       // 'assets': resolve('src/assets'),
       // 'styles': resolve('src/scss'),
-      'components': resolve('src/components')
+      'components': resolve('src/components'),
       // 'mixins': resolve('src/mixins'),
-      // 'helpers': resolve('src/helpers'),
+      'helpers': resolve('src/helpers')
       // 'constants': resolve('src/constants'),
       // 'data': resolve('src/data'),
       // 'store': resolve('src/store')

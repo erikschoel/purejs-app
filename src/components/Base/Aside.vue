@@ -2,8 +2,11 @@
   <el-aside>
     <el-menu ref="mainMenu" :default-openeds="openMenus" @submenu-click="selectMenu">
       <el-submenu v-for="(menu, menuIndex) in menuListKeys" :index="'' + menuIndex" :key="menuIndex" :name="menu" :class="{ selected: isActive(menuIndex) }">
-        <template slot="title"><i class="el-icon-message"></i>{{ menu }}</template>
-        <el-menu-item-group :key="'g-' + menuIndex">
+        <template slot="title">
+          <span><i class="el-icon-message"></i>{{ menu }}</span>
+          <i class="el-icon el-icon-circle-plus-outline" @click.stop="addItem(menuIndex)"></i>
+        </template>
+        <el-menu-item-group :key="'g-' + menuIndex" class="dropzone draggable-dropzone--occupied">
           <el-menu-item v-for="(item, itemIndex) in menuChildren(menu)" :index="menuIndex + '-' + itemIndex" :key="'g-0-i-' + itemIndex" @click="selectItem(menu, item)">{{ menuChild(menu, item) }}</el-menu-item>
         </el-menu-item-group>
       </el-submenu>
@@ -35,6 +38,7 @@ export default {
     ]),
     ...mapGetters('items', [
       'currentItemId',
+      'currentItemName',
       'currentNamespace',
       'currentNamespaceItems'
     ]),
@@ -64,17 +68,27 @@ export default {
       }
     },
     menuChildren(namespace) {
-      return namespace === 'classes' || namespace === 'utils' ? Object.keys(this.$pure[namespace]).sort() : this.allItemsNamespaced[namespace];
+      return namespace === 'classes' || namespace === 'utils' ? this.$pure[namespace].$keys().sort() : this.allItemsNamespaced[namespace];
     },
     menuChild(namespace, item) {
       return namespace === 'classes' || namespace === 'utils' ? item : this.allItems[item].key;
     },
-    selectItem(namespace, id) {
+    addItem(menuIndex) {
+      const namespace = this.menuListKeys[menuIndex];
       this.$store.commit('setCurrentItemRef', [ namespace ]);
-      const item = this.currentNamespaceItems[id];
-      if (item) {
-        this.$store.commit('addCurrentItemRef', id);
-        this.$emit('item-click', id);
+      this.deselectItem();
+    },
+    selectItem(namespace, id) {
+      if (!id) {
+        this.$store.commit('setCurrentItemRef', [ namespace ]);
+      } else {
+        this.$store.commit('setCurrentItemRef', [ namespace ]);
+
+        const item = this.currentNamespaceItems[id];
+        if (item) {
+          this.$store.commit('addCurrentItemRef', id);
+          this.$emit('item-click', id);
+        }
       }
     },
     selectMenu(menu) {
@@ -83,13 +97,17 @@ export default {
       if (menu.opened) {
         const idx = opn.indexOf('' + key);
         if (idx >= 0 && opn.length > 1) this.$refs.mainMenu.openedMenus.splice(idx, 1);
+        this.deselectItem();
       }
       this.$store.commit('setCurrentItemRef', [ menu.$attrs['name'] ]);
       this.$emit('menu-click', menu.$attrs['name']);
     },
-    deselectItem() {
+    deselectMenu() {
       this.$store.commit('resetCurrentItemRef');
       this.$refs.mainMenu.activeIndex = null;
+    },
+    deselectItem() {
+      this.$refs.mainMenu.activeIndex = (this.$refs.mainMenu.activeIndex && this.$refs.mainMenu.activeIndex.split('-').shift()) || null;
     },
     setActiveIndex(isNew) {
       var items = this.$refs.mainMenu.$children[this.activeIndex].$children[0].$children;
@@ -150,4 +168,43 @@ export default {
 </script>
 
 <style lang="scss">
+.el-aside {
+  width: 200px;
+  color: #333;
+  border-right: solid 1px #e6e6e6;
+  overflow-y: auto;
+  height: 100%;
+
+  .el-menu {
+    border-right: none;
+
+    .el-icon {
+      float: right;
+      margin-top: 20px;
+      margin-right: 40px;
+    }
+  }
+
+  .el-submenu {
+    .el-menu-item {
+      height: 36px;
+      line-height: 36px;
+      font-size: 16px;
+    }
+    .el-submenu__title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    &.selected {
+      background-color: #DDD;
+
+      .el-submenu__title:hover {
+        background-color: #BBB;
+      }
+    }
+  }
+  .el-menu-item-group__title {
+    display: none;
+  }
+}
 </style>

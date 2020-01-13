@@ -8,7 +8,7 @@ import lib from '@/lib';
 Vue.prototype.$pure = pure;
 Vuex.Store.prototype.$pure = pure;
 Vue.prototype.$empty = pure.utils.empty();
-Vue.prototype.$id = Vuex.Store.prototype.$id = pure.utils.counter(1000000);
+Vue.prototype.$id = Vuex.Store.prototype.$id = pure.$id = pure.utils.counter(1000000);
 
 if (config.env === 'development') {
   window.$pure = pure;
@@ -33,7 +33,9 @@ Vuex.Store.prototype.makeAction = function(info, func) {
     return error;
   });
 }
-
+Vuex.Store.prototype.makeNamespace = function(ns) {
+  return this.$pure.namespace().$get(ns).of(this.getters['items/makeNamespace'][ns]);
+}
 const store = new Vuex.Store({
   state: {
     allItems: {},
@@ -127,10 +129,18 @@ const store = new Vuex.Store({
       return Api().then((api) => {
         return api.get('data.php');
       }).then((data) => {
+        this.$pure.namespace().$keys().filter(ns => !(/(classes|utils)/).test(ns)).forEach((ns) => {
+          if (!data[ns]) data[ns] = {};
+          if (data.$name) delete data.$name;
+        });
+        if (data.$name) delete data.$name;
+        return data;
+      }).then((data) => {
         const store = this;
         return this.$pure.utils.walk((v, k, x, i) => {
-          if (typeof v === 'string') {
-            var item = { id: store.$id(), key: k, value: v };
+          if (typeof v === 'object' && v.namespace) {
+            var item = Object.assign({}, v);// { id: store.$id(), key: k, value: v };
+            item.id = store.$id(item.id ? item.id.replace('DB', '') : '');
             commit('setItem', item);
             return item.id;
           }
@@ -162,6 +172,16 @@ const store = new Vuex.Store({
 store.registerModule('items', {
   getters: {
     allItemsMap: lib.allItemsMap(store, pure),
+    makeNamespace(state, getters, rootGetters) {
+      return Object.keys(rootGetters.allItemsNamespaced).filter(ns => ns.indexOf('$') !== 0).reduce((result, ns) => {
+        result[ns] = (rootGetters.allItemsNamespaced[ns] || []).reduce((acc, key) => {
+          const item = rootGetters.allItems[key];
+          acc[item.key] = item.value;
+          return acc;
+        }, {});
+        return result;
+      }, {});
+    },
     isInternal(state, getters) {
       return getters.currentNamespace === 'classes' || getters.currentNamespace === 'utils';
     },
@@ -190,11 +210,7 @@ store.registerModule('items', {
       }
     },
     currentItems(state, getters, rootGetters) {
-      const items = rootGetters.allItemsNamespaced[getters.currentNamespace] || [];
-      return items.map(id => rootGetters.allItems[id]).reduce((acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      }, {});
+      return Object.keys(getters.makeNamespace[getters.currentNamespace].map(id => rootGetters.allItems[id]));
     },
     currentItem(state, getters, rootGetters) {
       return rootGetters.currentItemRef.length ? store.$pure.namespace().$get(rootGetters.currentItemRef[0]) : '';

@@ -1,17 +1,13 @@
 <template>
   <div class="home">
-    <code-browser />
+    <router-view/>
   </div>
 </template>
 
 <script>
-import CodeBrowser from 'components/Content/CodeBrowser';
 
 export default {
   name: 'Home',
-  components: {
-    CodeBrowser
-  },
   data() {
     return {
       msg: 'Welcome to Your Vue.js App'

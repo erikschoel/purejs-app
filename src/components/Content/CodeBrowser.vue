@@ -217,6 +217,14 @@ export default {
   .el-main {
     padding: 0;
 
+    .empty-main {
+      padding: 20px;
+
+      table {
+        width: 100%;
+      }
+    }
+
     .code-editor {
       border-bottom: 1px solid #e6e6e6;
 
